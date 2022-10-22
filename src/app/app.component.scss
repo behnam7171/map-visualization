@@ -1,0 +1,44 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mat-sidenav-container {
+  height: 100%;
+}
+
+mat-label {
+  margin-inline-end: 1em;
+}
+
+.row {
+  display: flex;
+}
+
+.highchart-container {
+  height: calc(100% - 64px);
+}
+
+.toolbar {
+  justify-content: space-between;
+}
+
+.filter-container {
+  display: flex;
+  justify-content: space-between;
+  min-width: 300px;
+
+  .filter {
+    display: flex;
+  }
+
+  filter:nth-child(1) {
+    margin-inline-end: 0.5em;
+  }
+
+  mat-label {
+    margin-inline-end: 0.5em;
+  }
+}
+
