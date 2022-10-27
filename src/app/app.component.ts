@@ -10,10 +10,9 @@ import {emotions} from "./models/emotions";
 import {MatButtonToggleChange} from "@angular/material/button-toggle";
 import {ages} from "./models/age";
 import {genders} from "./models/gender";
-import Cropper from 'cropperjs';
 import {MatDialog} from "@angular/material/dialog";
 import {MapModalComponent} from "./base-components/map-modal/map-modal.component";
-import * as events from "events";
+import {EmotionHCRow} from "./models/emotionHCRow";
 
 
 @Component({
@@ -29,6 +28,8 @@ export class AppComponent implements OnInit {
   }
 
   is3D: boolean = false;
+
+  currentEmotion: emotions = emotions.happy;
   emotions = emotions;
   ages = ages;
   genders = genders;
@@ -65,7 +66,11 @@ export class AppComponent implements OnInit {
       enabled: true
     },
     colorAxis: {
-      min: 0
+      tickPixelInterval: 0.1,
+      minColor: '#BFCFAD',
+      maxColor: '#31784B',
+      min: 0,
+      max: 1
     },
     series: [],
     credits: {
@@ -78,6 +83,7 @@ export class AppComponent implements OnInit {
   runOutsideAngular: boolean = false; // optional boolean, defaults to false
 
   ngOnInit() {
+    console.log(Highcharts);
     this.initiateRender();
   }
 
@@ -109,15 +115,17 @@ export class AppComponent implements OnInit {
 
   prepareEmotionData() {
     (this.chartOptions.series as any[]).push({
-      name: "Random data",
-      color: "rgb(124,181,236)",
+      name: "Emotion data",
+      // color: "rgb(124,181,236)",
       states: {
         hover: {
           color: "#BADA55"
         }
       },
       events: {
-        click: (event: any) => { this.drillDown(event) }
+        click: (event: any) => {
+          this.drillDown(event)
+        }
       },
       dataLabels: {
         enabled: true,
@@ -125,24 +133,50 @@ export class AppComponent implements OnInit {
       },
       joinBy: ['hc-key', 'countryCode'],
       allAreas: false,
-      data: this.dataFetcher.emotionData()// [["ir", 2]]
+      data: this.applyEmotionFilters()// [["ir", 2]]
     } as Highcharts.SeriesMapDataOptions,)
   }
 
   preparePointsData() {
+    console.log(this.applyEmotionFilters());
     (this.chartOptions.series as any[]).push({
       // Specify points using lat/lon
       type: "mappoint",
-      name: "Canada cities",
+      name: "Images",
+      tooltip: {
+        pointFormat: "lat: <b>{point.lat}</b><br/>lon: <b>{point.lon}</b><br/>"
+      },
       marker: {
         radius: 5,
         fillColor: "tomato"
       },
       events: {
-        click: (event: any) => { this.initializePointInfoModal(event) }
+        click: (event: any) => {
+          this.initializePointInfoModal(event)
+        }
       },
       data: this.dataFetcher.pointData()
     })
+  }
+
+  applyEmotionFilters(): EmotionHCRow[] {
+    const allData = this.dataFetcher.emotionData();
+    let result: EmotionHCRow[] = [];
+    allData.forEach((x) => {
+      const row: EmotionHCRow = {countryCode: x.countryCode, value: null}
+      if (this.currentEmotion == emotions.all) {
+        (result as any) = [...result, ...x.emotions.map((y) => {
+          return {countryCode: x.countryCode, value: y.ratio}
+        })]
+      } else {
+        const foundRelevantEmotion = x.emotions.find(y => y.emotion == this.currentEmotion)
+        if (foundRelevantEmotion) {
+          row.value = +foundRelevantEmotion.ratio;
+        }
+        result.push(row);
+      }
+    })
+    return result;
   }
 
   twoDimentionPipeline() {

@@ -24,10 +24,8 @@
     <div class="container">
       <div class="row">
         <mat-toolbar class="toolbar">
-          <button (click)="sidenav.toggle()" mat-icon-button color="accent" aria-label="toggle side filter">
-            <mat-icon>menu</mat-icon>
-          </button>
-          <mat-button-toggle-group (change)="emotionChanged($event)" name="fontStyle" aria-label="Font Style">
+          <mat-icon style="cursor: pointer" (click)="sidenav.toggle()">{{sidenav.opened ? "close" : "menu"}}</mat-icon>
+          <mat-button-toggle-group [value]="currentEmotion" (change)="emotionChanged($event)" name="fontStyle" aria-label="Font Style">
             <mat-button-toggle value="{{emotions.happy}}">Happy</mat-button-toggle>
             <mat-button-toggle value="{{emotions.angry}}">Angry</mat-button-toggle>
             <mat-button-toggle value="{{emotions.sad}}">Sad</mat-button-toggle>
@@ -35,6 +33,7 @@
             <mat-button-toggle value="{{emotions.disgust}}">Disgust</mat-button-toggle>
             <mat-button-toggle value="{{emotions.surprise}}">Surprise</mat-button-toggle>
             <mat-button-toggle value="{{emotions.neutral}}">Neutral</mat-button-toggle>
+            <mat-button-toggle value="{{emotions.all}}">All</mat-button-toggle>
           </mat-button-toggle-group>
           <mat-slide-toggle (change)="displayModeChanged($event)">3D</mat-slide-toggle>
         </mat-toolbar>

@@ -1,4 +1,5 @@
 export enum emotions {
+  all = "all",
   happy = "happy",
   angry = "angry",
   sad = "sad",
