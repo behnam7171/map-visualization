@@ -1,4 +1,9 @@
 export interface EmotionHCRow {
-  countryCode: string,
-  value: number | null
+  country: string,
+  value: number | null,
+  avgAge: number,
+  continent: string,
+  numFaces: number,
+  percentMan: number,
+  percentWoman: number
 }

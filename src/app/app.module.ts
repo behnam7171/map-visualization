@@ -15,27 +15,29 @@ import {MatListModule} from "@angular/material/list";
 import {MapModalComponent} from './base-components/map-modal/map-modal.component';
 import {MatDialogModule} from "@angular/material/dialog";
 import {ImageCropperModule} from "ngx-image-cropper";
+import {MatPaginatorModule} from "@angular/material/paginator";
 
 @NgModule({
   declarations: [
     AppComponent,
     MapModalComponent
   ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    BrowserAnimationsModule,
-    HighchartsChartModule,
-    MatSlideToggleModule,
-    MatToolbarModule,
-    MatButtonToggleModule,
-    MatSelectModule,
-    MatIconModule,
-    MatSidenavModule,
-    MatListModule,
-    MatDialogModule,
-    ImageCropperModule
-  ],
+    imports: [
+        BrowserModule,
+        AppRoutingModule,
+        BrowserAnimationsModule,
+        HighchartsChartModule,
+        MatSlideToggleModule,
+        MatToolbarModule,
+        MatButtonToggleModule,
+        MatSelectModule,
+        MatIconModule,
+        MatSidenavModule,
+        MatListModule,
+        MatDialogModule,
+        ImageCropperModule,
+        MatPaginatorModule
+    ],
   providers: [],
   bootstrap: [AppComponent]
 })

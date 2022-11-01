@@ -1,5 +1,5 @@
 export interface MapPoint {
-  url: string,
+  imgUrl: string,
   lat: number,
   lon: number,
   bbox: number[]

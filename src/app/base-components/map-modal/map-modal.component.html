@@ -1,12 +1,22 @@
 <h1 mat-dialog-title>Selected Image Information</h1>
 <div mat-dialog-content>
-  <p>lat: {{data.lat}}, lon: {{data.lon}}</p>
+  <mat-label>lat: {{data[index].lat}}</mat-label>
+  <br/>
+  <mat-label>lon: {{data[index].lon}}</mat-label>
+  <br/>
+  <mat-label>image URL: <a target="_blank" href="{{data[index].imgUrl}}">{{data[index].imgUrl}}</a></mat-label>
   <image-cropper style="height: 400px; width: 500px"
                  (cropperReady)="cropperReady($event)"
                  [cropper]="initialCropper"
-                 [maintainAspectRatio]="true"
-                 [imageURL]="'https://proxy.cors.sh/' + data.url"
+                 (loadImageFailed)="imageError($event)"
+                 [imageURL]="'https://proxy.cors.sh/' + data[index].imgUrl"
                  [disabled]="true"
   ></image-cropper>
+  <mat-paginator [length]="data.length"
+                 [pageSize]="1"
+                 [pageIndex]="index"
+                 (page)="pageChanged($event)"
+                 aria-label="Select page">
+  </mat-paginator>
 </div>
 

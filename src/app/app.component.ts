@@ -1,5 +1,8 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import * as Highcharts from "highcharts/highmaps";
+import markerClusters from 'highcharts/modules/marker-clusters';
+
+markerClusters(Highcharts)
 import {Chart, ChartOptions} from "highcharts/highmaps";
 import * as worldMap from "@highcharts/map-collection/custom/world.topo.json";
 import {DataFetcherService} from "./data-fetcher/data-fetcher.service";
@@ -13,7 +16,7 @@ import {genders} from "./models/gender";
 import {MatDialog} from "@angular/material/dialog";
 import {MapModalComponent} from "./base-components/map-modal/map-modal.component";
 import {EmotionHCRow} from "./models/emotionHCRow";
-
+import * as emotionData from "../assets/consolidated_sample_5M.json"
 
 @Component({
   selector: 'app-root',
@@ -37,6 +40,7 @@ export class AppComponent implements OnInit {
   selectedAge: ages = ages.all;
   selectedGender: genders = genders.all;
   opened: boolean = false;
+  maxRatio: number = 0;
 
   baseMapPath = 'https://code.highcharts.com/mapdata/'
 
@@ -49,6 +53,56 @@ export class AppComponent implements OnInit {
     chart: {
       map: worldMap, // "/custom/world.js",//countries/ir/ir-all.js
       events: {}
+    },
+    tooltip: {
+      valuePrefix: '%',
+      clusterFormat: "Number of images in this cluster: {point.clusterPointsAmount}"
+    },
+    plotOptions: {
+      mappoint: {
+        cluster: {
+          enabled: true,
+          allowOverlap: false,
+          animation: {
+            duration: 450
+          },
+          layoutAlgorithm: {
+            type: 'grid',
+            gridSize: 50
+          },
+          zones: [{
+            from: 1,
+            to: 4,
+            marker: {
+              radius: 13
+            }
+          }, {
+            from: 5,
+            to: 9,
+            marker: {
+              radius: 15
+            }
+          }, {
+            from: 10,
+            to: 15,
+            marker: {
+              radius: 17
+            }
+          }, {
+            from: 16,
+            to: 20,
+            marker: {
+              radius: 19
+            }
+          }, {
+            from: 21,
+            to: 100,
+            marker: {
+              radius: 21
+            }
+          }]
+        }
+      }
     },
     title: {
       text: "Emotion Visualization",
@@ -65,13 +119,6 @@ export class AppComponent implements OnInit {
     legend: {
       enabled: true
     },
-    colorAxis: {
-      tickPixelInterval: 0.1,
-      minColor: '#BFCFAD',
-      maxColor: '#31784B',
-      min: 0,
-      max: 1
-    },
     series: [],
     credits: {
       text: 'LSDE 2022 - Group 21',
@@ -83,7 +130,6 @@ export class AppComponent implements OnInit {
   runOutsideAngular: boolean = false; // optional boolean, defaults to false
 
   ngOnInit() {
-    console.log(Highcharts);
     this.initiateRender();
   }
 
@@ -95,6 +141,7 @@ export class AppComponent implements OnInit {
     } else {
       this.twoDimentionPipeline();
     }
+    this.commonConfig()
   }
 
   dataGenerator() {
@@ -122,32 +169,44 @@ export class AppComponent implements OnInit {
           color: "#BADA55"
         }
       },
-      events: {
-        click: (event: any) => {
-          this.drillDown(event)
-        }
+      tooltip: {
+        pointFormat: "{point.name}: {point.value}<br/>Continent: {point.continent}<br/>Average Age: {point.avgAge}<br/>Men: {point.percentMan}%<br/>Women: {point.percentWoman}%<br/>Number of faces: {point.numFaces}"
       },
       dataLabels: {
         enabled: true,
         format: "{point.name}"
       },
-      joinBy: ['hc-key', 'countryCode'],
+      joinBy: ['hc-key', 'country'],
       allAreas: false,
       data: this.applyEmotionFilters()// [["ir", 2]]
     } as Highcharts.SeriesMapDataOptions,)
   }
 
   preparePointsData() {
-    console.log(this.applyEmotionFilters());
     (this.chartOptions.series as any[]).push({
       // Specify points using lat/lon
       type: "mappoint",
       name: "Images",
+      turboThreshold: 0,
+      accessibility: {
+        point: {
+          descriptionFormatter: function (point: any) {
+            if (point.isCluster) {
+              return 'Grouping of ' + point.clusterPointsAmount + ' points.';
+            }
+            return point.name + ', country code: ' + point.country + '.';
+          }
+        }
+      },
       tooltip: {
-        pointFormat: "lat: <b>{point.lat}</b><br/>lon: <b>{point.lon}</b><br/>"
+        pointFormat: "lat: <b>{point.lat}</b><br/>lon: <b>{point.lon}</b><br/>",
       },
       marker: {
-        radius: 5,
+        states: {
+          hover: {
+            enabled: true
+          }
+        },
         fillColor: "tomato"
       },
       events: {
@@ -155,28 +214,47 @@ export class AppComponent implements OnInit {
           this.initializePointInfoModal(event)
         }
       },
-      data: this.dataFetcher.pointData()
+      data: this.dataFetcher.pointData(this.currentEmotion)
     })
   }
 
   applyEmotionFilters(): EmotionHCRow[] {
-    const allData = this.dataFetcher.emotionData();
+    this.maxRatio = 0;
+    const allData = Array.from(emotionData);
     let result: EmotionHCRow[] = [];
-    allData.forEach((x) => {
-      const row: EmotionHCRow = {countryCode: x.countryCode, value: null}
+    allData.forEach((x: any) => {
+      const row: EmotionHCRow = {country: x.country, value: null, avgAge: x.avgAge, percentMan: +((x.numMan/x.numFaces)*100).toFixed(2), percentWoman: +((x.numWoman/x.numFaces)*100).toFixed(2), numFaces: x.numFaces, continent: x.continent.toUpperCase()}
       if (this.currentEmotion == emotions.all) {
-        (result as any) = [...result, ...x.emotions.map((y) => {
-          return {countryCode: x.countryCode, value: y.ratio}
+        (result as any) = [...result, ...x.emotions.map((y: any) => {
+          return {country: x.country, value: y.ratio}
         })]
       } else {
-        const foundRelevantEmotion = x.emotions.find(y => y.emotion == this.currentEmotion)
+        const foundRelevantEmotion = x.emotions.find((y: any) => y.emotion == this.currentEmotion)
         if (foundRelevantEmotion) {
-          row.value = +foundRelevantEmotion.ratio;
+          if (+foundRelevantEmotion.ratio > this.maxRatio)
+            this.maxRatio = +foundRelevantEmotion.ratio;
+          row.value = +foundRelevantEmotion.ratio * 100;
         }
         result.push(row);
       }
     })
+    this.maxRatio = this.maxRatio * 100;
     return result;
+  }
+
+  commonConfig() {
+    this.chartOptions.colorAxis = {
+      minColor: '#BFCFAD',
+      maxColor: '#31784B',
+      min: 0,
+      max: this.maxRatio,
+      labels: {
+        formatter: function () {
+          return '<b>%' +
+            this.value + '</b>';
+        }
+      }
+    };
   }
 
   twoDimentionPipeline() {
@@ -198,13 +276,11 @@ export class AppComponent implements OnInit {
       }
     };
 
-    this.chartOptions.plotOptions = {
-      series: {
-        animation: {
-          duration: 750
-        },
-        clip: false
-      }
+    (this.chartOptions.plotOptions as any).series = {
+      animation: {
+        duration: 750
+      },
+      clip: false
     };
 
     (this.chartOptions.mapNavigation as MapNavigationOptions).enabled = false;
@@ -234,13 +310,18 @@ export class AppComponent implements OnInit {
 
   displayModeChanged($event: MatSlideToggleChange) {
     this.is3D = $event.checked;
+    this.restartRendering();
+  }
+
+  restartRendering() {
     this.destroyChart();
     this.initiateRender();
     this.updateFlag = true;
   }
 
   emotionChanged($event: MatButtonToggleChange) {
-    console.log($event.value)
+    this.currentEmotion = $event.value;
+    this.restartRendering();
 
   }
 
@@ -248,18 +329,12 @@ export class AppComponent implements OnInit {
     console.log($event)
   }
 
-  drillDown(event: any) {
-    console.log(event);
-    const mapKey = ""
-    const topojsonPath = this.baseMapPath + mapKey + '.topo.json';
-  }
-
   initializePointInfoModal(event: any) {
-    console.log(event);
+
     const dialogRef = this.dialog.open(MapModalComponent, {
       width: 'auto',
       height: "auto",
-      data: event.point.options,
+      data: event.point.clusteredData ? event.point.clusteredData.map((y: any) => y.options) : [event.point.options],
     });
 
     dialogRef.afterClosed().subscribe(result => {

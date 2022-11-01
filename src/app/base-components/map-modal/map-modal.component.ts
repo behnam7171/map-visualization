@@ -1,7 +1,8 @@
-import {Component, OnInit, Inject, AfterViewInit} from '@angular/core';
+import {Component, Inject, AfterViewInit} from '@angular/core';
 import {MatDialogRef, MAT_DIALOG_DATA} from '@angular/material/dialog';
 import {MapPoint} from "../../models/map-point";
 import {CropperPosition, Dimensions} from "ngx-image-cropper";
+import {PageEvent} from "@angular/material/paginator";
 
 @Component({
   selector: 'map-modal',
@@ -16,21 +17,14 @@ export class MapModalComponent implements AfterViewInit {
 
   constructor(
     public dialogRef: MatDialogRef<MapModalComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: MapPoint) {
+    @Inject(MAT_DIALOG_DATA) public data: MapPoint[]) {
   }
+
+  index = 0;
+
 
   onNoClick(): void {
     this.dialogRef.close();
-  }
-
-  getBase64Image(img: any) {
-    var canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
-    var ctx = canvas.getContext("2d") as any;
-    ctx.drawImage(img, 0, 0);
-    var dataURL = canvas.toDataURL("image/png");
-    return dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
   }
 
   ngAfterViewInit() {
@@ -39,10 +33,18 @@ export class MapModalComponent implements AfterViewInit {
 
   cropperReady($event: Dimensions) {
     this.initialCropper = {
-      x1: +this.data.bbox[0],
-      x2: +this.data.bbox[0] + +this.data.bbox[2],
-      y1: +this.data.bbox[1],
-      y2: +this.data.bbox[1] + +this.data.bbox[3],
+      x1: +this.data[this.index].bbox[0],
+      x2: +this.data[this.index].bbox[0] + +this.data[this.index].bbox[2],
+      y1: +this.data[this.index].bbox[1],
+      y2: +this.data[this.index].bbox[1] + +this.data[this.index].bbox[3],
     }
+  }
+
+  pageChanged($event: PageEvent) {
+    this.index = $event.pageIndex;
+  }
+
+  imageError(test: any) {
+    console.log("load fiale");
   }
 }

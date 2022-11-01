@@ -24,7 +24,7 @@
     <div class="container">
       <div class="row">
         <mat-toolbar class="toolbar">
-          <mat-icon style="cursor: pointer" (click)="sidenav.toggle()">{{sidenav.opened ? "close" : "menu"}}</mat-icon>
+          <mat-icon style="cursor: pointer; visibility: hidden" (click)="sidenav.toggle()">{{sidenav.opened ? "close" : "menu"}}</mat-icon>
           <mat-button-toggle-group [value]="currentEmotion" (change)="emotionChanged($event)" name="fontStyle" aria-label="Font Style">
             <mat-button-toggle value="{{emotions.happy}}">Happy</mat-button-toggle>
             <mat-button-toggle value="{{emotions.angry}}">Angry</mat-button-toggle>
@@ -43,6 +43,7 @@
           #chart
           style="width: 100%; height: 100%; display: block;"
           [Highcharts]="Highcharts"
+
 
           [constructorType]="chartConstructor"
           [options]="chartOptions"
