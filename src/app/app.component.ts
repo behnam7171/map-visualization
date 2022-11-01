@@ -161,25 +161,29 @@ export class AppComponent implements OnInit {
   }
 
   prepareEmotionData() {
-    (this.chartOptions.series as any[]).push({
-      name: "Emotion data",
-      // color: "rgb(124,181,236)",
-      states: {
-        hover: {
-          color: "#BADA55"
-        }
-      },
-      tooltip: {
-        pointFormat: "{point.name}: {point.value}<br/>Continent: {point.continent}<br/>Average Age: {point.avgAge}<br/>Men: {point.percentMan}%<br/>Women: {point.percentWoman}%<br/>Number of faces: {point.numFaces}"
-      },
-      dataLabels: {
-        enabled: true,
-        format: "{point.name}"
-      },
-      joinBy: ['hc-key', 'country'],
-      allAreas: false,
-      data: this.applyEmotionFilters()// [["ir", 2]]
-    } as Highcharts.SeriesMapDataOptions,)
+    if (this.currentEmotion == emotions.all) {
+      (this.chartOptions.series as any[]) = [...(this.chartOptions.series as any), ...this.applyEmotionFilters().filter((x)=> x.name !== emotions.all)];
+    } else {
+      (this.chartOptions.series as any[]).push({
+        name: "Emotion data",
+        // color: "rgb(124,181,236)",
+        states: {
+          hover: {
+            color: "#BADA55"
+          }
+        },
+        tooltip: {
+          pointFormat: "{point.name}: {point.value}<br/>Continent: {point.continent}<br/>Average confidence in detection: {point.avgConfidence}<br/>Average Age: {point.avgAge}<br/>Men: {point.percentMan}%<br/>Women: {point.percentWoman}%<br/>Number of faces: {point.numFaces}"
+        },
+        dataLabels: {
+          enabled: true,
+          format: "{point.name}"
+        },
+        joinBy: ['hc-key', 'country'],
+        allAreas: false,
+        data: this.applyEmotionFilters()// [["ir", 2]]
+      } as Highcharts.SeriesMapDataOptions,)
+    }
   }
 
   preparePointsData() {
@@ -218,43 +222,88 @@ export class AppComponent implements OnInit {
     })
   }
 
-  applyEmotionFilters(): EmotionHCRow[] {
+  applyEmotionFilters(): any[] {
     this.maxRatio = 0;
     const allData = Array.from(emotionData);
-    let result: EmotionHCRow[] = [];
+    let result: any[] = [];
+    const series = Object.keys(emotions).map(emotion => {
+      return {
+        name: emotion,
+        data: [],
+        joinBy: ['hc-key', 'country'],
+        allAreas: false,
+        tooltip: {
+          pointFormat: "{point.name}: {point.value}<br/>Continent: {point.continent}<br/>Average confidence in detection: {point.avgConfidence}<br/>Average Age: {point.avgAge}<br/>Men: {point.percentMan}%<br/>Women: {point.percentWoman}%<br/>Number of faces: {point.numFaces}"
+        },
+        dataLabels: {
+          enabled: true,
+          format: "{point.name}"
+        }
+      }
+    })
     allData.forEach((x: any) => {
-      const row: EmotionHCRow = {country: x.country, value: null, avgAge: x.avgAge, percentMan: +((x.numMan/x.numFaces)*100).toFixed(2), percentWoman: +((x.numWoman/x.numFaces)*100).toFixed(2), numFaces: x.numFaces, continent: x.continent.toUpperCase()}
+      const row: EmotionHCRow = {
+        country: x.country,
+        value: null,
+        avgConfidence: null,
+        avgAge: x.avgAge,
+        percentMan: +((x.numMan / x.numFaces) * 100).toFixed(2),
+        percentWoman: +((x.numWoman / x.numFaces) * 100).toFixed(2),
+        numFaces: x.numFaces,
+        continent: x.continent.toUpperCase()
+      }
       if (this.currentEmotion == emotions.all) {
-        (result as any) = [...result, ...x.emotions.map((y: any) => {
-          return {country: x.country, value: y.ratio}
-        })]
+        // todo: domina
+        let dominantEmotion: any;
+        let localMaxRatio = 0;
+        x.emotions.forEach((em: any) => {
+          if (em.ratio > localMaxRatio) {
+            localMaxRatio = em.ratio;
+            dominantEmotion = em;
+          }
+        });
+        const foundTargetSerie = series.find(serie => serie.name == dominantEmotion.emotion);
+        (foundTargetSerie as any).data.push({
+          country: x.country,
+          value: dominantEmotion.ratio * 100,
+          avgConfidence: dominantEmotion.avgConfidence,
+          avgAge: x.avgAge,
+          percentMan: +((x.numMan / x.numFaces) * 100).toFixed(2),
+          percentWoman: +((x.numWoman / x.numFaces) * 100).toFixed(2),
+          numFaces: x.numFaces,
+          continent: x.continent.toUpperCase()
+        });
       } else {
         const foundRelevantEmotion = x.emotions.find((y: any) => y.emotion == this.currentEmotion)
         if (foundRelevantEmotion) {
           if (+foundRelevantEmotion.ratio > this.maxRatio)
             this.maxRatio = +foundRelevantEmotion.ratio;
           row.value = +foundRelevantEmotion.ratio * 100;
+          row.avgConfidence = foundRelevantEmotion.avgConfidence
         }
         result.push(row);
       }
     })
     this.maxRatio = this.maxRatio * 100;
+    if (this.currentEmotion == emotions.all)
+      result = series.filter((x)=> x.data.length !== 0).sort((a, b) => a.name.localeCompare(b.name));
     return result;
   }
 
   commonConfig() {
-    this.chartOptions.colorAxis = {
-      minColor: '#BFCFAD',
-      maxColor: '#31784B',
-      min: 0,
-      max: this.maxRatio,
-      labels: {
-        formatter: function () {
-          return '<b>%' +
-            this.value + '</b>';
+    if (this.currentEmotion !== emotions.all)
+      this.chartOptions.colorAxis = {
+        minColor: '#BFCFAD',
+        maxColor: '#31784B',
+        min: 0,
+        max: this.maxRatio,
+        labels: {
+          formatter: function () {
+            return '<b>%' +
+              this.value + '</b>';
+          }
         }
-      }
-    };
+      };
   }
 
   twoDimentionPipeline() {

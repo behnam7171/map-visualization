@@ -18,7 +18,12 @@ export class DataFetcherService {
     const results: MapPoint[] = [];
     const extracted = json.map((y: any) => {
       const keys = Object.keys(y);
-      const targetKeys = keys.filter(k => k.includes(currentEmotion + "Img"));
+      let targetKeys;
+      if(currentEmotion === emotions.all) {
+        targetKeys = keys.filter(k => k.includes("Img"));
+      } else {
+        targetKeys = keys.filter(k => k.includes(currentEmotion + "Img"));
+      }
       return targetKeys.map((z: any) => y[z])
     })
 
